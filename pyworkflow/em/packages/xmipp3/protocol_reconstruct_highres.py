@@ -205,7 +205,7 @@ class XmippProtReconstructHighRes(ProtRefine3D, HelicalFinder):
         form.addParam('contSimultaneous', IntParam, label="Number of simultaneous processes", default=4, condition='alignmentMethod==1', expertLevel=LEVEL_ADVANCED,
                       help='At the beginning of the process, each process requires more memory, this is the number of simultaneous processes that can do this part')
         
-        form.addSection(label='Weights')
+        form.addSection(label='Reconstruction/Weights')
         form.addParam('weightSSNR', BooleanParam, label="Weight by SSNR?", default=False, expertLevel=LEVEL_ADVANCED,
                       help='Weight input images by SSNR')
         form.addParam('weightContinuous', BooleanParam, label="Weight by Continuous cost?", default=False, expertLevel=LEVEL_ADVANCED,
@@ -216,6 +216,8 @@ class XmippProtReconstructHighRes(ProtRefine3D, HelicalFinder):
                       help='Weight input images by their fitness (cross correlation) percentile in their defocus group')
         form.addParam('weightCCmin', FloatParam, label="Minimum CC weight", default=0.1, expertLevel=LEVEL_ADVANCED,
                       help='Weights are between this value and 1')
+        form.addParam('fastReconstruction', BooleanParam, label="Fast reconstruction", default=False, expertLevel=LEVEL_ADVANCED,
+                      help='Accelerated reconstruction')
         
         form.addSection(label='Post-processing')
         form.addParam('postAdHocMask', PointerParam, label="Mask", pointerClass='VolumeMask', allowsNull=True,
@@ -1221,8 +1223,11 @@ class XmippProtReconstructHighRes(ProtRefine3D, HelicalFinder):
                     fnAnglesToUse = fnRestricted
                 
                 # Reconstruct Fourier
-                args="-i %s -o %s --sym %s --weight --thr %d"%(fnAnglesToUse,fnVol,self.symmetryGroup,self.numberOfThreads.get())
-                self.runJob("xmipp_reconstruct_fourier",args,numberOfMpi=self.numberOfMpi.get())
+                args="-i %s -o %s --sym %s --weight"%(fnAnglesToUse,fnVol,self.symmetryGroup)
+                if self.fastReconstruction:
+                    self.runJob("xmipp_reconstruct_fourier_accel",args,numberOfMpi=self.numberOfMpi.get())
+                else:
+                    self.runJob("xmipp_reconstruct_fourier",args+"--thr %d"%self.numberOfThreads.get(),numberOfMpi=self.numberOfMpi.get())
                 
                 if deleteStack:
                     cleanPath(deletePattern)
