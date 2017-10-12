@@ -1229,7 +1229,7 @@ class XmippProtReconstructHighRes(ProtRefine3D, HelicalFinder):
                 else:
                     self.runJob("xmipp_reconstruct_fourier",args+"--thr %d"%self.numberOfThreads.get(),numberOfMpi=self.numberOfMpi.get())
                 
-                if deleteStack:
+                if deleteStack and False: # TODO: Remove this false
                     cleanPath(deletePattern)
         if grayAdjusted:
             fnAngles=join(fnDirCurrent,"angles.xmd")
